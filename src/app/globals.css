@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+/*
+  EduConnect AI design tokens.
+  Coral/pink brand with deep-navy ink. Interactive brand colours are chosen
+  for ≥ 4.5:1 contrast against white (brand-600 #d93a3a ≈ 4.55:1).
+*/
+@theme {
+  --color-brand-50: #fff4f3;
+  --color-brand-100: #ffe5e2;
+  --color-brand-200: #ffcbc6;
+  --color-brand-300: #ffa69e;
+  --color-brand-400: #fb7d72;
+  --color-brand-500: #f25c5c;
+  --color-brand-600: #d93a3a;
+  --color-brand-700: #b42d35;
+  --color-brand-800: #932631;
+  --color-brand-900: #7a232e;
+
+  --color-blush-50: #fff7fa;
+  --color-blush-100: #ffedf3;
+  --color-blush-200: #ffd8e5;
+  --color-blush-300: #ffb6cd;
+  --color-blush-400: #fb87ab;
+
+  --color-ink-50: #f5f6fa;
+  --color-ink-100: #e9ebf3;
+  --color-ink-200: #d0d4e4;
+  --color-ink-300: #a7aecb;
+  --color-ink-400: #7a83a7;
+  --color-ink-500: #586189;
+  --color-ink-600: #434b70;
+  --color-ink-700: #343a5a;
+  --color-ink-800: #262b46;
+  --color-ink-900: #1b1f36;
+  --color-ink-950: #12152a;
+
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --shadow-card: 0 1px 2px rgb(27 31 54 / 0.04), 0 4px 16px rgb(27 31 54 / 0.06);
+  --shadow-pop: 0 10px 40px rgb(217 58 58 / 0.18);
+
+  --animate-fade-up: fade-up 0.35s ease-out both;
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  --animate-breathe: breathe 16s ease-in-out infinite;
+  @keyframes breathe {
+    0%, 100% { transform: scale(0.6); }
+    25%, 50% { transform: scale(1); }
+    75% { transform: scale(0.6); }
+  }
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-ink-50);
+  color: var(--color-ink-900);
+  font-family: var(--font-sans);
+}
+
+/* Visible, consistent keyboard focus everywhere. */
+:focus-visible {
+  outline: 3px solid var(--color-brand-500);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.bg-brand-gradient {
+  background-image: linear-gradient(135deg, var(--color-brand-500) 0%, #e8466b 55%, var(--color-blush-400) 100%);
+}
+
+.text-balance {
+  text-wrap: balance;
+}

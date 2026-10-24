@@ -1,0 +1,62 @@
+{
+  "name": "educonnect",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:reset": "node scripts/reset-db.mjs",
+    "db:init": "tsx --tsconfig tsconfig.json scripts/db-init.mts",
+    "cap:sync": "cap sync android",
+    "android:dev": "node scripts/android.mjs dev",
+    "android:prod": "node scripts/android.mjs prod",
+    "android:apk": "node scripts/android.mjs apk",
+    "android:qr": "node scripts/qr.mjs",
+    "android:icons": "node scripts/generate-icons.mjs",
+    "school:create": "tsx --tsconfig tsconfig.json scripts/create-school.mts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0",
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/splash-screen": "^8.0.2",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.61.0",
+    "mongodb": "^7.7.0",
+    "next": "16.4.3",
+    "qrcode": "^1.5.4",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "recharts": "^3.10.1",
+    "server-only": "^0.0.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
+    "@tailwindcss/turbopack": "^4",
+    "@types/node": "^24.19.2",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.3",
+    "mongodb-memory-server": "^11.3.0",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.15",
+    "typescript": "^5",
+    "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=20.9"
+  },
+  "config": {
+    "mongodbMemoryServer": {
+      "disablePostinstall": "1"
+    }
+  }
+}

@@ -1,0 +1,98 @@
+apply plugin: 'com.android.application'
+
+// ─── App identity ────────────────────────────────────────────────────────────
+// Defined once in ../../capacitor.config.ts (APP_ID / APP_NAME). `npx cap sync`
+// writes it to src/main/assets/capacitor.config.json, which we read here.
+def capConfigFile = file('src/main/assets/capacitor.config.json')
+def capConfig = capConfigFile.exists() ? new groovy.json.JsonSlurper().parse(capConfigFile) : [:]
+def appId = capConfig.appId ?: 'ro.educonnect.app'
+def appName = capConfig.appName ?: 'EduConnect AI'
+
+// ─── Release signing (optional) ──────────────────────────────────────────────
+// Create android/keystore.properties (gitignored — never commit it) with:
+//   storeFile=C:/Users/<you>/keys/educonnect-release.jks   (keep the .jks OUTSIDE the repo)
+//   storePassword=…
+//   keyAlias=educonnect
+//   keyPassword=…
+// Without it, `assembleRelease` produces an unsigned APK; use Android Studio's
+// Build › Generate Signed App Bundle / APK instead. See docs/ANDROID.md.
+def keystorePropsFile = rootProject.file('keystore.properties')
+def keystoreProps = new Properties()
+if (keystorePropsFile.exists()) {
+    keystorePropsFile.withInputStream { keystoreProps.load(it) }
+}
+
+android {
+    namespace = "ro.educonnect.app"
+    compileSdk = rootProject.ext.compileSdkVersion
+    buildFeatures {
+        resValues = true
+    }
+    defaultConfig {
+        applicationId appId
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        // Bump versionCode for every APK you publish (Android refuses to
+        // "update" to an equal or lower versionCode).
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        resValue "string", "app_name", appName
+        resValue "string", "title_activity_main", appName
+        resValue "string", "package_name", appId
+        resValue "string", "custom_url_scheme", appId
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    signingConfigs {
+        if (keystoreProps['storeFile']) {
+            release {
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (keystoreProps['storeFile']) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

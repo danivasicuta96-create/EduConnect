@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- EduConnect AI brand -->
+    <color name="colorPrimary">#D93A3A</color>
+    <color name="colorPrimaryDark">#B42D35</color>
+    <color name="colorAccent">#E8466B</color>
+    <color name="brand_ink">#1B1F36</color>
+    <color name="splash_background">#FFFFFF</color>
+    <color name="app_background">#FFFFFF</color>
+</resources>
