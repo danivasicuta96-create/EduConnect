@@ -1,0 +1,35 @@
+# Netlify deployment for EduConnect AI (https://educonnectnova.netlify.app).
+#
+# Required environment variables (Netlify → Site configuration → Environment
+# variables, scope "Builds" + "Functions"): MONGODB_URI, DATA_ENCRYPTION_KEY,
+# DEMO_MODE. Optional: APP_URL, ANTHROPIC_API_KEY, RESEND_API_KEY, EMAIL_FROM.
+# See README.md › Deploy.
+
+[build]
+  # db:init prepares MongoDB (indexes, reference data, demo seed) before the
+  # Next.js build. It never fails the build if the database isn't set up yet.
+  command = "npm run db:init && npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "24"
+  NEXT_TELEMETRY_DISABLED = "1"
+  # The embedded MongoDB is for local development only — don't download it in CI.
+  MONGOMS_DISABLE_POSTINSTALL = "1"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Serve the Android app with the right type so phones offer to install it.
+[[headers]]
+  for = "/downloads/*.apk"
+  [headers.values]
+    Content-Type = "application/vnd.android.package-archive"
+    Content-Disposition = "attachment; filename=\"EduConnect-AI.apk\""
+    Cache-Control = "public, max-age=300, must-revalidate"
+    X-Content-Type-Options = "nosniff"
+
+[[headers]]
+  for = "/downloads/*.json"
+  [headers.values]
+    Cache-Control = "public, max-age=300, must-revalidate"

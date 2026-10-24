@@ -45,8 +45,15 @@ export function encryptField(plain: string | null | undefined): string | null {
 export function decryptField(stored: string | null | undefined): string | null {
   if (!stored) return null;
   if (!stored.startsWith(PREFIX)) return stored; // legacy/plain value
-  const buf = Buffer.from(stored.slice(PREFIX.length), "base64");
-  const decipher = createDecipheriv("aes-256-gcm", key(), buf.subarray(0, 12));
-  decipher.setAuthTag(buf.subarray(12, 28));
-  return Buffer.concat([decipher.update(buf.subarray(28)), decipher.final()]).toString("utf8");
+  try {
+    const buf = Buffer.from(stored.slice(PREFIX.length), "base64");
+    const decipher = createDecipheriv("aes-256-gcm", key(), buf.subarray(0, 12));
+    decipher.setAuthTag(buf.subarray(12, 28));
+    return Buffer.concat([decipher.update(buf.subarray(28)), decipher.final()]).toString("utf8");
+  } catch {
+    // Wrong key (e.g. DATA_ENCRYPTION_KEY changed) or corrupted value: never
+    // crash the page, never leak ciphertext — show the field as unavailable.
+    console.error("[crypto] a protected field could not be decrypted (check DATA_ENCRYPTION_KEY).");
+    return "[unavailable — encrypted with a different key]";
+  }
 }

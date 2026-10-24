@@ -46,6 +46,11 @@ next-env.d.ts
 
 # android / capacitor
 /public/downloads/*.apk
+# The published release APK is committed so Netlify serves it at /downloads/educonnect.apk.
+!/public/downloads/educonnect.apk
 *.jks
 *.keystore
 keystore.properties
+
+# Netlify local build output
+.netlify/

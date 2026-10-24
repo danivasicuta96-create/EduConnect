@@ -422,8 +422,46 @@ export async function seedDemo(db: MongoDb): Promise<void> {
   for (const s of students) await runAlertEngine(String(s._id), today);
 }
 
-export async function seedIfEmpty(db: MongoDb): Promise<void> {
+const SEED_MARKER = { collection: "app_meta", id: "demo_seed" };
+
+/** Remove every document belonging to the fictional demo schools (e.g. after an interrupted seed). */
+export async function purgeDemo(db: MongoDb): Promise<number> {
+  const schoolIds = (await db.collection(C.schools).find({ is_demo: true }, { projection: { _id: 1 } }).toArray()).map((s) => String(s._id));
+  if (schoolIds.length === 0) return 0;
+  const userIds = (await db.collection(C.profiles).find({ school_id: { $in: schoolIds } }, { projection: { _id: 1 } }).toArray()).map((p) => String(p._id));
+  let removed = 0;
+  for (const name of Object.values(C)) {
+    if (name === C.schools || name === C.users || name === C.sessions || name === C.passwordResets || name === C.interests || name === C.plans) continue;
+    removed += (await db.collection(name).deleteMany({ school_id: { $in: schoolIds } })).deletedCount;
+  }
+  removed += (await db.collection(C.sessions).deleteMany({ user_id: { $in: userIds } })).deletedCount;
+  removed += (await db.collection(C.passwordResets).deleteMany({ user_id: { $in: userIds } })).deletedCount;
+  removed += (await db.collection(C.users).deleteMany({ _id: { $in: userIds as never[] }, is_demo: true })).deletedCount;
+  removed += (await db.collection(C.schools).deleteMany({ _id: { $in: schoolIds as never[] } })).deletedCount;
+  await db.collection(SEED_MARKER.collection).deleteOne({ _id: SEED_MARKER.id as never });
+  return removed;
+}
+
+/**
+ * Seed the fictional demo once. A completion marker is written last, so a seed
+ * that was interrupted (network error, timeout) is detected, cleaned up and redone.
+ */
+export async function seedIfEmpty(db: MongoDb): Promise<"seeded" | "present" | "skipped"> {
   await seedReference(db);
-  if ((await db.collection(C.schools).countDocuments({}, { limit: 1 })) > 0) return;
+  const marker = await db.collection(SEED_MARKER.collection).findOne({ _id: SEED_MARKER.id as never });
+  if (marker) return "present";
+  const demoSchools = await db.collection(C.schools).countDocuments({ is_demo: true });
+  const realSchools = await db.collection(C.schools).countDocuments({ is_demo: { $ne: true } });
+  if (demoSchools > 0) {
+    await purgeDemo(db); // an earlier seed didn't finish
+  } else if (realSchools > 0) {
+    return "skipped"; // a real deployment that never had the demo — don't add it
+  }
   await seedDemo(db);
+  await db.collection(SEED_MARKER.collection).updateOne(
+    { _id: SEED_MARKER.id as never },
+    { $set: { completed_at: new Date() } },
+    { upsert: true },
+  );
+  return "seeded";
 }

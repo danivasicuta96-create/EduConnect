@@ -126,8 +126,14 @@ function ready(): Promise<State> {
   if (!g.__educonnectMongoReady) {
     g.__educonnectMongoReady = base()
       .then(async (s) => {
-        if (process.env.DEMO_MODE !== "false" && process.env.SKIP_AUTO_SEED !== "true") {
-          const { seedIfEmpty } = await import("./seed");
+        const { seedIfEmpty, seedReference } = await import("./seed");
+        // Reference data (interests, plans, platform helplines) is tiny and idempotent.
+        await seeding.run(true, () => seedReference(s.db));
+        // The demo school is seeded on request only outside production. In
+        // production it is seeded by `npm run db:init` (run in the Netlify build),
+        // because a serverless request could time out half-way through.
+        const seedOnRequest = process.env.NODE_ENV !== "production" || process.env.SEED_ON_REQUEST === "true";
+        if (process.env.DEMO_MODE !== "false" && process.env.SKIP_AUTO_SEED !== "true" && seedOnRequest) {
           await seeding.run(true, () => seedIfEmpty(s.db));
         }
         return s;

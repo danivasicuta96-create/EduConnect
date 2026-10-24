@@ -1,0 +1,10 @@
+{
+  "appId": "ro.educonnect.app",
+  "versionName": "1.0",
+  "versionCode": 1,
+  "variant": "release",
+  "serverUrl": "https://educonnectnova.netlify.app/login",
+  "size": 3021489,
+  "sha256": "417134fa1fed3d935e230c43d375277e829bdbb73081d7f568cfc9a5003aa7f8",
+  "builtAt": "2026-10-24T15:38:48.183Z"
+}

@@ -38,6 +38,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.3",
+    "@netlify/plugin-nextjs": "^5.16.4",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^24.19.2",
     "@types/qrcode": "^1.5.6",

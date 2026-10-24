@@ -19,9 +19,9 @@ export interface ApkInfo {
 }
 
 /**
- * Public origin of this deployment, e.g. https://educonnect.vercel.app.
+ * Public origin of this deployment, e.g. https://educonnectnova.netlify.app.
  * APP_URL wins when set; otherwise derived from the (proxy) request headers so
- * it is right on every Vercel preview / production URL.
+ * it is right on every preview / production URL.
  */
 export function requestOrigin(h: Headers): string {
   const configured = process.env.APP_URL?.trim();
@@ -42,8 +42,8 @@ export function requestOrigin(h: Headers): string {
 
 /**
  * Looks for the APK. Locally (and on any Node host) it is a file in public/.
- * On Vercel, public/ is served by the CDN and isn't on the function's disk,
- * so fall back to a HEAD request against our own origin.
+ * On Netlify/Vercel, public/ is served by the CDN and isn't on the function's
+ * disk, so fall back to a HEAD request against our own origin.
  * ANDROID_APK_URL can point at an external download (e.g. a GitHub release).
  */
 export async function getApkInfo(origin: string): Promise<ApkInfo> {
@@ -65,9 +65,14 @@ export async function getApkInfo(origin: string): Promise<ApkInfo> {
     // not on disk — try over HTTP below
   }
 
-  if (process.env.VERCEL) {
+  // On serverless hosts (Netlify, Vercel) public/ is served by the CDN and isn't
+  // on the function's disk, so check over HTTP against our own origin.
+  if (process.env.NODE_ENV === "production" || process.env.NETLIFY || process.env.VERCEL) {
     const size = await headSize(href);
-    if (size !== null) return { available: true, href, size: size || undefined };
+    if (size !== null) {
+      const meta = await fetchMeta(origin + APK_META_PATH);
+      return { available: true, href, size: size || undefined, version: meta.version, builtAt: meta.builtAt };
+    }
   }
   return { available: false, href };
 }
@@ -75,6 +80,20 @@ export async function getApkInfo(origin: string): Promise<ApkInfo> {
 async function readMeta(file: string): Promise<{ version?: string; builtAt?: string }> {
   try {
     const json = JSON.parse(await readFile(file, "utf8")) as Record<string, unknown>;
+    return {
+      version: typeof json.versionName === "string" ? json.versionName : undefined,
+      builtAt: typeof json.builtAt === "string" ? json.builtAt : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
+async function fetchMeta(url: string): Promise<{ version?: string; builtAt?: string }> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(3000), next: { revalidate: 300 } });
+    if (!res.ok) return {};
+    const json = (await res.json()) as Record<string, unknown>;
     return {
       version: typeof json.versionName === "string" ? json.versionName : undefined,
       builtAt: typeof json.builtAt === "string" ? json.builtAt : undefined,

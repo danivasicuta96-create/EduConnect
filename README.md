@@ -45,37 +45,36 @@ Useful scripts:
 
 ## Configuration
 
-Copy `.env.example` to `.env.local` for local overrides. In production, set these in **Vercel → Project → Settings → Environment Variables**. Never commit them.
+Copy `.env.example` to `.env.local` for local overrides. In production, set these in **Netlify → Site configuration → Environment variables** (scopes: *Builds* and *Functions*). Never commit them.
 
 | Variable | Required in production | Purpose |
 |---|---|---|
 | `MONGODB_URI` | ✅ | MongoDB Atlas connection string. Use an EU region for Romanian/EU schools |
 | `MONGODB_DB` | – | Database name (default `educonnect`) |
 | `DATA_ENCRYPTION_KEY` | ✅ | 32 random bytes, base64. Encrypts check-in notes, counselor notes and support messages. Generate with `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. **Back it up**: losing it makes those fields unreadable |
-| `APP_URL` | ✅ | Public URL, e.g. `https://educonnect.vercel.app`. Used in emails and the install QR code |
-| `DEMO_MODE` | ✅ set to `false` | `true` seeds the fictional school and enables one-click demo sign-in |
+| `APP_URL` | ✅ | Public URL, e.g. `https://educonnectnova.netlify.app`. Used in emails and the install QR code |
+| `DEMO_MODE` | ✅ | `true` seeds the fictional demo school during the build and enables one-click demo sign-in (good for testing on phones); `false` for a real school |
 | `ANTHROPIC_API_KEY` | optional | Enables the real AI tutor and assistant (`AI_MODEL` defaults to `claude-opus-5-5`). Without it, the offline demo provider is used |
 | `RESEND_API_KEY`, `EMAIL_FROM` | optional | Email delivery for invitations and password resets |
 
-## Deploy to production (Vercel + MongoDB Atlas)
+## Deploy to production (Netlify + MongoDB Atlas)
+
+Live site: **https://educonnectnova.netlify.app** · Android install page: **https://educonnectnova.netlify.app/install**
 
 1. **Atlas**
-   - Create or choose a cluster in an EU region.
-   - Under *Database Access*, create a user with read/write access to the `educonnect` database. If a password was ever shared in plain text (chat, email, a commit), **rotate it**.
-   - Under *Network Access*, allow Vercel: either `0.0.0.0/0` with a strong password, or Vercel's MongoDB Atlas integration.
-2. **Vercel**
-   - Import the Git repository (framework: Next.js; the defaults work).
-   - Add the environment variables above, with `DEMO_MODE=false` for a real school.
-   - Deploy.
-3. **First run**
-   - Optionally run `MONGODB_URI=... DATA_ENCRYPTION_KEY=... npm run db:init` locally to create the indexes in advance. The app also creates them on first start.
-   - With `DEMO_MODE=false`, no school exists yet. Create the first school with `npm run school:create -- "School name" JOIN-CODE admin@school.ro` (using the production env vars). It prints a one-time registration link for the administrator.
-4. **Android app**
-   - Build the APK against the production URL and put it at `public/downloads/educonnect.apk`.
-   - Redeploy, then print the QR code from `/install`.
-   - Full steps: [docs/ANDROID.md](docs/ANDROID.md).
+   - Cluster in an EU region; a database user with read/write on `educonnect`. If a password was ever shared in plain text (chat, email, a commit), **rotate it**.
+   - *Network Access* → allow `0.0.0.0/0` (Netlify functions and builds have no fixed IPs), protected by a strong password.
+2. **Netlify** (the repo is connected; every push to `main` deploys). In *Site configuration → Environment variables* add, for scopes **Builds** and **Functions**:
+   - `MONGODB_URI` — the Atlas connection string
+   - `DATA_ENCRYPTION_KEY` — `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` (back it up)
+   - `DEMO_MODE` — `true` while testing with the fictional school, `false` for real use
+   - optional: `APP_URL=https://educonnectnova.netlify.app`, `ANTHROPIC_API_KEY`, `RESEND_API_KEY` + `EMAIL_FROM`
+   
+   Then *Deploys → Trigger deploy*. `netlify.toml` runs `npm run db:init` (indexes, reference data and — with `DEMO_MODE=true` — the demo school, once) before `next build`.
+3. **Real school**: with `DEMO_MODE=false`, create it with `npm run school:create -- "School name" JOIN-CODE admin@school.ro` (run locally with the production `MONGODB_URI` and `DATA_ENCRYPTION_KEY`). It prints a one-time sign-up link for the administrator.
+4. **Android app**: the signed APK is committed at `public/downloads/educonnect.apk` and served at `/downloads/educonnect.apk`; students scan the QR on `/install`. To publish a new version see [docs/ANDROID.md](docs/ANDROID.md).
 
-The backend has to run on a server, so it stays on Vercel. The Android app is a native shell that loads it. Database and AI credentials never ship inside the APK.
+The backend runs on Netlify (Next.js server functions). The Android app is a native shell that loads it — database and AI credentials never ship inside the APK.
 
 ## Security & privacy summary
 
@@ -85,7 +84,7 @@ The backend has to run on a server, so it stays on Vercel. The Android app is a 
   - Counselors see individual scores only for students with an active or recent alert, and notes only when the student chose to share them.
   - Administrators don't see wellbeing content.
   - Parents need recorded consent.
-- **Encryption**: TLS in transit (Vercel and Atlas). Atlas encrypts data at rest, and the app additionally encrypts the most sensitive free text with AES-256-GCM.
+- **Encryption**: TLS in transit (Netlify and Atlas). Atlas encrypts data at rest, and the app additionally encrypts the most sensitive free text with AES-256-GCM.
 - **Accounts**:
   - scrypt password hashing;
   - opaque, hashed, expiring sessions in httpOnly cookies;
