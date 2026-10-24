@@ -104,6 +104,9 @@ async function connect(): Promise<State> {
   const client = new MongoClient(uri, {
     maxPoolSize: Number(process.env.MONGODB_POOL_SIZE ?? 10),
     appName: "educonnect-ai",
+    // Fail fast (well inside serverless time limits) with a clear error instead of hanging.
+    serverSelectionTimeoutMS: Number(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS ?? 8000),
+    connectTimeoutMS: 8000,
   });
   await client.connect();
   const db = client.db(dbName);
@@ -174,7 +177,19 @@ export async function closeMongo(): Promise<void> {
   await s.stop?.();
 }
 
+/** Bump when indexes change; startup then recreates them once. */
+const INDEX_VERSION = 1;
+
 async function ensureIndexes(db: MongoDb) {
+  // Serverless cold starts: one read instead of ~40 createIndex round trips.
+  const meta = db.collection<{ _id: string; version?: number }>("app_meta");
+  const current = await meta.findOne({ _id: "indexes" });
+  if ((current?.version ?? 0) >= INDEX_VERSION) return;
+  await createIndexes(db);
+  await meta.updateOne({ _id: "indexes" }, { $set: { version: INDEX_VERSION, updated_at: new Date() } }, { upsert: true });
+}
+
+async function createIndexes(db: MongoDb) {
   const C = COLLECTIONS;
   const ix = (name: string, specs: Array<[Record<string, 1 | -1>, Record<string, unknown>?]>) =>
     Promise.all(specs.map(([keys, opts]) => db.collection(name).createIndex(keys, opts ?? {})));
