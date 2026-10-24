@@ -30,7 +30,7 @@ npm install
 npm run dev          # http://localhost:3000
 ```
 
-No configuration is needed. Without `MONGODB_URI`, an embedded MongoDB starts automatically, its data lives in `.data/mongo`, and a fictional demo school is seeded on first start. Open <http://localhost:3000/login> and use **Explore the demo** for one-click sign-in as a student, teacher, counselor, admin or parent.
+No configuration is needed... Without `MONGODB_URI`, an embedded MongoDB starts automatically, its data lives in `.data/mongo`, and a fictional demo school is seeded on first start. Open <http://localhost:3000/login> and use **Explore the demo** for one-click sign-in as a student, teacher, counselor, admin or parent.
 
 Useful scripts:
 
